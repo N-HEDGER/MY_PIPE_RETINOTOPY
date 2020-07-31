@@ -1,0 +1,70 @@
+def savgol_filter(data, polyorder, deriv, window_length,tr,fmt):
+    """ Applies a savitsky-golay filter to a nifti-file.
+
+    Fits a savitsky-golay filter to a 4D fMRI nifti-file and subtracts the
+    fitted data from the original data to effectively remove low-frequency
+    signals.
+
+    Parameters
+    ----------
+    in_file : str
+        Absolute path to nifti-file.
+    polyorder : int (default: 3)
+        Order of polynomials to use in filter.
+    deriv : int (default: 0)
+        Number of derivatives to use in filter.
+    window_length : int (default: 120)
+        Window length in seconds.
+
+    Returns
+    -------
+    out_file : str
+        Absolute path to filtered nifti-file.
+
+
+    Courtesy of knapenlab.
+    """
+
+    import nibabel as nib
+    from scipy.signal import savgol_filter
+    import numpy as np
+    import os
+
+    dims = data.shape
+    
+
+    # TR must be in seconds
+    if tr < 0.01:
+        tr = np.round(tr * 1000, decimals=3)
+    if tr > 20:
+        tr = tr / 1000.0
+
+    window = np.int(window_length / tr)
+    
+    # Window must be odd
+    if window % 2 == 0:
+        window += 1
+
+    data = data.reshape((np.prod(data.shape[:-1]), data.shape[-1]))
+    data_filt = savgol_filter(data, window_length=window, polyorder=polyorder,
+                              deriv=deriv, axis=1, mode='nearest')
+
+    data_filt = data - data_filt + data_filt.mean(axis=-1)[:, np.newaxis]
+    data_filt = data_filt.reshape(dims)
+    data_filt=data_filt.astype(fmt)
+
+    return data_filt
+
+
+
+
+def perform_savgol (dlist, polyorder, deriv, window_length,tr,procs,fmt):
+    filt_dat=Parallel(n_jobs=procs,verbose=9)(delayed(savgol_filter)(data,polyorder, deriv, window_length,tr,fmt)  for data in dlist)
+    return filt_dat
+
+
+
+
+
+
+
