@@ -103,9 +103,6 @@ def make_gaussian_patches(sizes,distarray,invmask):
 
 
 
-def alphaplot(sub,dat,R2,thresh,fig):
-    light=cortex.Vertex2D(dat,R2,subject=sub, vmin=np.nanmin(dat), vmax=np.nanmax(dat),vmin2=thresh,vmax2=1,cmap='plasma_alpha')
-    mfig=cortex.quickshow(light,with_curvature=True,fig=fig)
 
 
 

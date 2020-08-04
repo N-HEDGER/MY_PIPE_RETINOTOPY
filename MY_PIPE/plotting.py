@@ -11,7 +11,7 @@ import cortex
 def make_figspace(height,x,y):
 
 	flatmap_height = height
-	full_figsize = (x y)
+	full_figsize = (x,y)
 
 	full_fig = plt.figure(constrained_layout=True, figsize=full_figsize)
 	return full_fig

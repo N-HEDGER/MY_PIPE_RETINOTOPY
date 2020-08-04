@@ -126,6 +126,7 @@ def import_gifts(flist, procs,fmt):
 
 def make_webviewer_dict(sub,data,labels):
 
+# Needs to be in float 64 for some reason.
 
     mydict= {}
 
@@ -138,6 +139,26 @@ def make_webviewer_dict(sub,data,labels):
 
 
 
+def h5_import(h5,attribute):
+    f = h5py.File(h5, "r")
+    myvar=np.array(f[attribute])
+    f.close()
+    return myvar
+
+
+def h5_dump(h5,dat,attribute):
+    f = h5py.File(h5, "a")
+    f[attribute]=dat
+    f.close()
+    return attribute
+
+
+
+def h5_make(path,s):
+    fname=os.path.join(path,'sub_'+s+'.hdf5')
+    f = h5py.File(fname, "w")
+    f.close()
+    return fname
 
 
 

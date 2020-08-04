@@ -58,12 +58,6 @@ def savgol_filter(data, polyorder, deriv, window_length,tr,fmt):
 
 
 
-
-
-
-
-
-
 def perform_savgol (dlist, polyorder, deriv, window_length,tr,procs,fmt):
     filt_dat=Parallel(n_jobs=procs,verbose=9)(delayed(savgol_filter)(data,polyorder, deriv, window_length,tr,fmt)  for data in dlist)
     return filt_dat
@@ -144,9 +138,12 @@ import os
 
 def export_noisefit(denoised_dat,export,sub,path,hem):
     R2s=[]
+    bs=[]
+    dat=[]
     for dn in denoised_dat:
         R2s.append(np.nan_to_num(dn[2],0))
-        bs.append(np.nan_to_num(dn[1],0))  
+        bs.append(np.nan_to_num(dn[1],0))
+        dat.append(dn[0])
 
 
 
@@ -158,14 +155,14 @@ def export_noisefit(denoised_dat,export,sub,path,hem):
         nibabel.freesurfer.io.write_morph_data(os.path.join(path,sub+'_'+hem+'_'+'noise_R2_curv'),R2s)
         minimal_plot(sub,R2s,True,full_fig,True,os.path.join(path,sub+'_'+hem+'_'+'noise_R2.png'))
 
-    for i in range(t.shape[0]):
+        for i in range(bs.shape[0]):
 
-        nibabel.freesurfer.io.write_morph_data(os.path.join(path,sub+'_'+hem+'_'+'pc'+str(i)+'noise_beta_curv'),s[i,:])
-        minimal_plot(sub,bs[i,:],True,full_fig,True,os.path.join(path,sub+'_'+hem+'_'+'pc'+str(i)+'noise_beta.png'))
+            nibabel.freesurfer.io.write_morph_data(os.path.join(path,sub+'_'+hem+'_'+'pc'+str(i)+'noise_beta_curv'),bs[i,:])
+            minimal_plot(sub,bs[i,:],True,full_fig,True,os.path.join(path,sub+'_'+hem+'_'+'pc'+str(i)+'noise_beta.png'))
 
 
 
-    return R2s, bs
+    return R2s, bs, dat
 
 
 
@@ -190,14 +187,44 @@ def export_tsnr(tsnr_dat,export,sub,path,hem):
         tsnr.append(ts)
 
 
-    tsnr=np.mean(tsnr,axis=0)    
+    tsnr=np.squeeze(np.mean(tsnr,axis=0))    
 
     if export:
-        nibabel.freesurfer.io.write_morph_data(os.path.join(path,sub+'_'+hem+'_'+'tsnr_curv'),tsnr)
-        minimal_plot(sub,R2s,True,full_fig,True,os.path.join(path,sub+'_'+hem+'_'+'tsnr.png'))
+        nibabel.freesurfer.io.write_morph_data(os.path.join(path,sub+'_'+hem+'tsnr_curv'),tsnr)
+        minimal_plot(sub,tsnr,True,full_fig,True,os.path.join(path,sub+'_'+hem+'tsnr.png'))
 
 
     return tsnr
+
+
+
+
+def forcepos(data):
+    data=data+(1-np.min(data))
+    return(data)
+
+
+
+def compute_psc(data,fmt,tr):
+    psc=nilearn.signal.clean(signals=forcepos(data), detrend=False, standardize='psc', low_pass=None, high_pass=None, t_r=tr, ensure_finite= True)
+    return psc.astype(fmt)
+
+def perform_pscing(dlist,fmt,tr,procs):
+    psc_dat=Parallel(n_jobs=procs,verbose=9)(delayed(compute_psc)(np.transpose(data),fmt,tr)  for data in dlist)
+    return np.array(psc_dat)
+
+
+
+def runav(data,tsnr,fmt):
+    dmean=np.squeeze(np.average(data,axis=0,weights=tsnr))
+    return dmean.astype(fmt)
+
+
+def perform_runav(darray,tsnrarray,procs,fmt):
+    avdat=Parallel(n_jobs=procs,verbose=9)(delayed(runav)(darray[:,fn,:],tsnrarray,fmt)  for fn in range(darray.shape[1]))
+    return np.array(avdat)
+
+
 
 
 
